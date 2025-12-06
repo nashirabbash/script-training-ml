@@ -1,0 +1,171 @@
+======================================================================
+HYPERPARAMETER TUNING - CLASSIFICATION REPORT
+======================================================================
+Generated: 2025-12-06 23:11:20
+Test Size: 25%
+Cross-Validation Folds: 5
+======================================================================
+
+SUMMARY TABLE
+----------------------------------------------------------------------
+Model                Accuracy     Precision    Recall       F1-Score    
+----------------------------------------------------------------------
+KNN                  0.8750       0.8958       0.8750       0.8682      
+SVM                  0.7500       0.7500       0.7500       0.7500      
+MLP                  0.6250       0.6042       0.6250       0.6045      
+RandomForest         0.8750       0.9062       0.8750       0.8770      
+NaiveBayes           0.7500       0.7500       0.7500       0.7500      
+DecisionTree         0.3750       0.4375       0.3750       0.3452      
+----------------------------------------------------------------------
+
+
+======================================================================
+MODEL: KNN
+======================================================================
+
+Best Parameters:
+  - metric: euclidean
+  - n_neighbors: 3
+  - weights: distance
+
+Best CV Score (F1): 0.5867
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.83      1.00      0.91         5
+           1       1.00      0.67      0.80         3
+
+    accuracy                           0.88         8
+   macro avg       0.92      0.83      0.85         8
+weighted avg       0.90      0.88      0.87         8
+
+Confusion Matrix:
+[[5 0]
+ [1 2]]
+
+======================================================================
+MODEL: SVM
+======================================================================
+
+Best Parameters:
+  - C: 10
+  - gamma: scale
+  - kernel: rbf
+
+Best CV Score (F1): 0.7133
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.80      0.80      0.80         5
+           1       0.67      0.67      0.67         3
+
+    accuracy                           0.75         8
+   macro avg       0.73      0.73      0.73         8
+weighted avg       0.75      0.75      0.75         8
+
+Confusion Matrix:
+[[4 1]
+ [1 2]]
+
+======================================================================
+MODEL: MLP
+======================================================================
+
+Best Parameters:
+  - activation: tanh
+  - alpha: 0.0001
+  - hidden_layer_sizes: (50,)
+  - learning_rate: constant
+
+Best CV Score (F1): 0.7400
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.67      0.80      0.73         5
+           1       0.50      0.33      0.40         3
+
+    accuracy                           0.62         8
+   macro avg       0.58      0.57      0.56         8
+weighted avg       0.60      0.62      0.60         8
+
+Confusion Matrix:
+[[4 1]
+ [2 1]]
+
+======================================================================
+MODEL: RandomForest
+======================================================================
+
+Best Parameters:
+  - max_depth: None
+  - min_samples_leaf: 1
+  - min_samples_split: 5
+  - n_estimators: 100
+
+Best CV Score (F1): 0.3333
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       1.00      0.80      0.89         5
+           1       0.75      1.00      0.86         3
+
+    accuracy                           0.88         8
+   macro avg       0.88      0.90      0.87         8
+weighted avg       0.91      0.88      0.88         8
+
+Confusion Matrix:
+[[4 1]
+ [0 3]]
+
+======================================================================
+MODEL: NaiveBayes
+======================================================================
+
+Best Parameters:
+  - var_smoothing: 1e-12
+
+Best CV Score (F1): 0.2143
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.80      0.80      0.80         5
+           1       0.67      0.67      0.67         3
+
+    accuracy                           0.75         8
+   macro avg       0.73      0.73      0.73         8
+weighted avg       0.75      0.75      0.75         8
+
+Confusion Matrix:
+[[4 1]
+ [1 2]]
+
+======================================================================
+MODEL: DecisionTree
+======================================================================
+
+Best Parameters:
+  - criterion: gini
+  - max_depth: None
+  - min_samples_leaf: 1
+  - min_samples_split: 2
+
+Best CV Score (F1): 0.4200
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.50      0.20      0.29         5
+           1       0.33      0.67      0.44         3
+
+    accuracy                           0.38         8
+   macro avg       0.42      0.43      0.37         8
+weighted avg       0.44      0.38      0.35         8
+
+Confusion Matrix:
+[[1 4]
+ [1 2]]

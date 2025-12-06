@@ -1,0 +1,24 @@
+================================================================================
+FINAL SUMMARY - HYPERPARAMETER TUNING BENCHMARK
+================================================================================
+Generated: 2025-12-06 22:45:17
+
+BEST MODEL PER TEST SIZE (by F1-Score)
+--------------------------------------------------------------------------------
+
+Test Size 20%:
+  Best Model: KNN
+  F1-Score:   0.8286
+  Parameters: {'metric': 'euclidean', 'n_neighbors': 9, 'weights': 'uniform'}
+
+Test Size 25%:
+  Best Model: RandomForest
+  F1-Score:   0.8770
+  Parameters: {'max_depth': None, 'min_samples_leaf': 1, 'min_samples_split': 5, 'n_estimators': 100}
+
+Test Size 30%:
+  Best Model: KNN
+  F1-Score:   0.7778
+  Parameters: {'metric': 'euclidean', 'n_neighbors': 7, 'weights': 'distance'}
+
+================================================================================
