@@ -91,6 +91,7 @@ Run the project with:
 
 ```sh
 .\venv\Sripts\Activate
+py hyperparameter_tuning.py
 ```
 
 ---
