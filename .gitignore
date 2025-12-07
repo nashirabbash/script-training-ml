@@ -1,0 +1,8 @@
+# Created by venv; see https://docs.python.org/3/library/venv.html
+venv/
+Data/
+.github/
+preprocessed_data/
+results/
+results_anova/
+results_feature_selection/

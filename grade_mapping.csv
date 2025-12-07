@@ -1,0 +1,31 @@
+subject,exam,grade,performance
+S1,Final,85,high
+S1,Midterm 1,78,high
+S1,Midterm 2,80,high
+S2,Final,92,high
+S2,Midterm 1,85,high
+S2,Midterm 2,88,high
+S3,Final,88,high
+S3,Midterm 1,82,high
+S3,Midterm 2,79,medium
+S4,Final,76,medium
+S4,Midterm 1,72,medium
+S4,Midterm 2,74,medium
+S5,Final,81,high
+S5,Midterm 1,77,medium
+S5,Midterm 2,79,medium
+S6,Final,90,high
+S6,Midterm 1,84,high
+S6,Midterm 2,87,high
+S7,Final,83,high
+S7,Midterm 1,75,medium
+S7,Midterm 2,78,high
+S8,Final,79,medium
+S8,Midterm 1,73,medium
+S8,Midterm 2,71,medium
+S9,Final,86,high
+S9,Midterm 1,80,high
+S9,Midterm 2,82,high
+S10,Final,91,high
+S10,Midterm 1,89,high
+S10,Midterm 2,87,high
