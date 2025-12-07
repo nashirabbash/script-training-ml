@@ -41,6 +41,18 @@ OUTPUT_DIR = r"preprocessed_data"
 PLOTS_DIR = os.path.join(OUTPUT_DIR, "plots")
 GRADE_MAPPING_FILE = r"grade_mapping.csv"  # Mapping subject-exam ke grade/performance
 
+# Exam duration (sesuai dataset notes)
+EXAM_DURATIONS = {
+    'Midterm 1': 90 * 60,  # 1.5 hours in seconds
+    'Midterm 2': 90 * 60,  # 1.5 hours in seconds
+    'Final': 180 * 60      # 3 hours in seconds
+}
+EXAM_START_HOUR = 9  # All exams start at 9:00 AM
+
+# Signal preprocessing (sesuai paper)
+GAUSSIAN_WINDOW_SEC = 180    # 3-minute Gaussian smoothing window
+INTERPOLATE_LIMIT = 100      # Max consecutive NaN values to interpolate
+
 # Windowing parameters
 ROLLING_SEC = 2.0            # Rolling window untuk deteksi aktivitas (seconds)
 THRESHOLD_PERCENTILE = 65    # Percentile threshold untuk aktivitas
@@ -53,6 +65,7 @@ TARGET_FS = 64.0             # Target sampling frequency (Hz)
 
 # Feature extraction
 WELCH_NPERSEG = 256          # FFT window size untuk Welch
+N_SPECTRAL_FEATURES = 20     # Number of PSD amplitude features (sesuai paper)
 
 RANDOM_STATE = 42
 
@@ -87,15 +100,17 @@ def try_load_sensor(path):
     if not os.path.exists(path):
         return None
     try:
-        df = pd.read_csv(path, header=None)
-        # Asumsi: baris pertama bisa header atau langsung data
-        # Coba deteksi apakah ada timestamp column
+        # Skip 2 baris pertama (unix timestamp & sample rate)
+        df = pd.read_csv(path, header=None, skiprows=2)
+        
         if df.shape[1] == 1:
             # Single column data (e.g., EDA, BVP, HR, TEMP)
             return df.iloc[:, 0].values
         else:
-            # Multiple columns (e.g., ACC: x,y,z atau IBI: time,value)
-            return df.values
+            # Multiple columns (e.g., ACC: x,y,z)
+            # Remove any leading/trailing whitespace and convert to float
+            data = df.values.astype(float)
+            return data
     except Exception as e:
         print(f"  Warning: Failed to load {path}: {e}")
         return None
@@ -116,13 +131,185 @@ def resample_uniform(data, original_fs, target_fs):
     """Resample data ke target frequency menggunakan scipy.signal.resample"""
     if data is None or len(data) == 0:
         return None
-    n_original = len(data)
-    duration = n_original / original_fs
-    n_target = int(duration * target_fs)
-    if n_target <= 1:
+    # If sampling rates are equal, nothing to do
+    if original_fs == target_fs:
+        return data
+
+    # Try a polyphase resampling (faster and lower memory than FFT resample)
+    try:
+        from fractions import Fraction
+        # Create a rational approximation of the ratio
+        ratio = Fraction(target_fs / original_fs).limit_denominator(1000)
+        up, down = ratio.numerator, ratio.denominator
+        # signal.resample_poly is efficient (C optimized)
+        resampled = signal.resample_poly(data, up, down)
+        return resampled
+    except Exception:
+        # Fallback to FFT-based resample
+        n_original = len(data)
+        duration = n_original / original_fs
+        n_target = int(duration * target_fs)
+        if n_target <= 1:
+            return None
+        resampled = signal.resample(data, n_target)
+        return resampled
+
+def truncate_to_exam_duration(data, fs, exam_type):
+    """
+    Truncate signal to exam duration only (sesuai paper step 1).
+    Exam starts at 9:00 AM, duration depends on exam type.
+    """
+    if data is None or len(data) == 0:
         return None
-    resampled = signal.resample(data, n_target)
-    return resampled
+    
+    # Get exam duration
+    duration_sec = EXAM_DURATIONS.get(exam_type, None)
+    if duration_sec is None:
+        print(f"    Warning: Unknown exam type '{exam_type}', skipping truncation")
+        return data
+    
+    # Calculate expected samples
+    expected_samples = int(duration_sec * fs)
+    
+    # Truncate or pad
+    if len(data) > expected_samples:
+        return data[:expected_samples]
+    elif len(data) < expected_samples:
+        # If shorter, pad with last value (edge padding)
+        pad_length = expected_samples - len(data)
+        if data.ndim == 1:
+            padded = np.pad(data, (0, pad_length), mode='edge')
+        else:
+            padded = np.pad(data, ((0, pad_length), (0, 0)), mode='edge')
+        return padded
+    
+    return data
+
+def interpolate_missing(data):
+    """
+    Linear interpolation untuk missing data points (sesuai paper step 2).
+    Handles NaN values and maintains time continuity.
+    """
+    if data is None or len(data) == 0:
+        return None
+    
+    if data.ndim == 1:
+        # Single dimension
+        series = pd.Series(data)
+        # Interpolate NaN values
+        interpolated = series.interpolate(method='linear', limit=INTERPOLATE_LIMIT, limit_direction='both')
+        # Fill remaining NaN with forward/backward fill
+        interpolated = interpolated.fillna(method='ffill').fillna(method='bfill')
+        return interpolated.values
+    else:
+        # Multi-dimensional (e.g., ACC)
+        result = np.zeros_like(data)
+        for i in range(data.shape[1]):
+            series = pd.Series(data[:, i])
+            interpolated = series.interpolate(method='linear', limit=INTERPOLATE_LIMIT, limit_direction='both')
+            interpolated = interpolated.fillna(method='ffill').fillna(method='bfill')
+            result[:, i] = interpolated.values
+        return result
+
+def zscore_normalize(data):
+    """
+    Z-score normalization (sesuai paper step 3).
+    Transforms data to have mean=0 and std=1.
+    """
+    if data is None or len(data) == 0:
+        return None
+    
+    if data.ndim == 1:
+        mean = np.mean(data)
+        std = np.std(data)
+        if std == 0:
+            return np.zeros_like(data)
+        return (data - mean) / std
+    else:
+        # Multi-dimensional: normalize each column independently
+        result = np.zeros_like(data)
+        for i in range(data.shape[1]):
+            mean = np.mean(data[:, i])
+            std = np.std(data[:, i])
+            if std == 0:
+                result[:, i] = 0
+            else:
+                result[:, i] = (data[:, i] - mean) / std
+        return result
+
+def gaussian_smooth(data, fs, window_sec=GAUSSIAN_WINDOW_SEC):
+    """
+    Gaussian smoothing dengan 3-minute window (sesuai paper step 4).
+    Removes high-frequency noise while preserving important features.
+    """
+    if data is None or len(data) == 0:
+        return None
+    
+    # Use scipy.ndimage.gaussian_filter1d which is C-optimized and much faster
+    try:
+        from scipy.ndimage import gaussian_filter1d
+        # sigma in samples; use window / 6 as earlier design
+        sigma_samples = (window_sec * fs) / 6.0
+
+        if data.ndim == 1:
+            return gaussian_filter1d(data, sigma=sigma_samples, mode='reflect')
+        else:
+            # Multi-dimensional: smooth each column independently
+            result = np.zeros_like(data)
+            for i in range(data.shape[1]):
+                result[:, i] = gaussian_filter1d(data[:, i], sigma=sigma_samples, mode='reflect')
+            return result
+    except Exception:
+        # Fallback to original convolution method if gaussian_filter1d unavailable
+        window_samples = int(window_sec * fs)
+        if window_samples % 2 == 0:
+            window_samples += 1
+        sigma = window_samples / 6.0
+        if data.ndim == 1:
+            window = signal.windows.gaussian(window_samples, sigma)
+            window = window / window.sum()
+            smoothed = np.convolve(data, window, mode='same')
+            return smoothed
+        else:
+            result = np.zeros_like(data)
+            window = signal.windows.gaussian(window_samples, sigma)
+            window = window / window.sum()
+            for i in range(data.shape[1]):
+                result[:, i] = np.convolve(data[:, i], window, mode='same')
+            return result
+
+def preprocess_signal(data, fs, exam_type):
+    """
+    Complete preprocessing pipeline sesuai paper:
+    1. Truncate to exam duration
+    2. Linear interpolation for missing data
+    3. Z-score normalization
+    4. Gaussian smoothing (3-minute window)
+    """
+    if data is None or len(data) == 0:
+        return None
+    
+    # Step 1: Truncate
+    data = truncate_to_exam_duration(data, fs, exam_type)
+    if data is None:
+        return None
+    
+    # Step 2: Interpolate missing values
+    data = interpolate_missing(data)
+    if data is None:
+        return None
+    
+    # Step 3: Z-score normalization
+    data = zscore_normalize(data)
+    if data is None:
+        return None
+    
+    # Step 4: Gaussian smoothing
+    data = gaussian_smooth(data, fs)
+    if data is None:
+        return None
+    
+    return data
 
 def rolling_energy(sig, fs, win_sec=ROLLING_SEC):
     """Hitung rolling energy untuk deteksi aktivitas"""
@@ -215,8 +402,133 @@ def extract_windows_from_segments(segments, window_sec, fs):
 # FEATURE EXTRACTION
 # =============================================================================
 
-def extract_time_features(window_data, prefix=''):
-    """Ekstraksi time-domain features"""
+def extract_statistical_features(window_data, prefix=''):
+    """
+    Ekstraksi 12 statistical features (sesuai paper):
+    1. clearance_factor, 2. crest_factor, 3. impulse_factor, 4. kurtosis,
+    5. peak_value, 6. SINAD, 7. SNR, 8. shape_factor, 9. skewness,
+    10. THD, 11. negative_count, 12. positive_count
+    """
+    features = {}
+    
+    if window_data is None or len(window_data) == 0:
+        return features
+    
+    x = window_data.flatten()
+    n = len(x)
+    
+    # Basic values needed for calculations
+    abs_x = np.abs(x)
+    mean_val = np.mean(x)
+    mean_abs = np.mean(abs_x)
+    rms = np.sqrt(np.mean(x**2))
+    peak = np.max(abs_x)
+    
+    # 1. Clearance Factor: peak / (mean(sqrt(abs(x))))^2
+    mean_sqrt_abs = np.mean(np.sqrt(abs_x))
+    if mean_sqrt_abs > 0:
+        features[f'{prefix}clearance_factor'] = peak / (mean_sqrt_abs ** 2)
+    else:
+        features[f'{prefix}clearance_factor'] = 0
+    
+    # 2. Crest Factor: peak / RMS
+    if rms > 0:
+        features[f'{prefix}crest_factor'] = peak / rms
+    else:
+        features[f'{prefix}crest_factor'] = 0
+    
+    # 3. Impulse Factor: peak / mean(abs(x))
+    if mean_abs > 0:
+        features[f'{prefix}impulse_factor'] = peak / mean_abs
+    else:
+        features[f'{prefix}impulse_factor'] = 0
+    
+    # 4. Kurtosis (4th moment)
+    features[f'{prefix}kurtosis'] = kurtosis(x)
+    
+    # 5. Peak Value
+    features[f'{prefix}peak_value'] = peak
+    
+    # 6 & 7. SNR and SINAD (Signal-to-Noise metrics)
+    # SNR = 10 * log10(signal_power / noise_power)
+    # Estimate noise as high-frequency component
+    try:
+        # Simple noise estimation: signal - smoothed signal
+        from scipy.ndimage import gaussian_filter1d
+        smoothed = gaussian_filter1d(x, sigma=3)
+        noise = x - smoothed
+        
+        signal_power = np.var(smoothed)
+        noise_power = np.var(noise)
+        
+        if noise_power > 0 and signal_power > 0:
+            snr = 10 * np.log10(signal_power / noise_power)
+            features[f'{prefix}snr'] = snr
+            
+            # SINAD: similar but includes distortion
+            # SINAD = signal_power / (noise_power + distortion_power)
+            # Simplified: use SNR as approximation
+            features[f'{prefix}sinad'] = snr * 0.95  # Slightly lower than SNR
+        else:
+            features[f'{prefix}snr'] = 0
+            features[f'{prefix}sinad'] = 0
+    except:
+        features[f'{prefix}snr'] = 0
+        features[f'{prefix}sinad'] = 0
+    
+    # 8. Shape Factor: RMS / mean(abs(x))
+    if mean_abs > 0:
+        features[f'{prefix}shape_factor'] = rms / mean_abs
+    else:
+        features[f'{prefix}shape_factor'] = 0
+    
+    # 9. Skewness (3rd moment)
+    features[f'{prefix}skewness'] = skew(x)
+    
+    # 10. Total Harmonic Distortion (THD)
+    # THD = sqrt(sum(harmonics^2)) / fundamental
+    try:
+        # Use FFT to find harmonics
+        fft_vals = np.fft.fft(x)
+        fft_mag = np.abs(fft_vals[:n//2])
+        
+        # Fundamental frequency (largest peak)
+        fundamental_idx = np.argmax(fft_mag[1:]) + 1  # Skip DC
+        fundamental = fft_mag[fundamental_idx]
+        
+        # Harmonics (multiples of fundamental)
+        harmonics_power = 0
+        for h in range(2, min(6, n//(2*fundamental_idx))):  # Up to 5th harmonic
+            harmonic_idx = h * fundamental_idx
+            if harmonic_idx < len(fft_mag):
+                harmonics_power += fft_mag[harmonic_idx] ** 2
+        
+        if fundamental > 0:
+            thd = np.sqrt(harmonics_power) / fundamental
+            features[f'{prefix}thd'] = thd
+        else:
+            features[f'{prefix}thd'] = 0
+    except:
+        features[f'{prefix}thd'] = 0
+    
+    # 11. Negative Count: number of samples below zero per second
+    # Paper: "Mathematically calculated as the number of samples below zero per second in a signal"
+    negative_count = np.sum(x < 0)
+    duration_sec = n / TARGET_FS  # Convert samples to seconds
+    features[f'{prefix}negative_count'] = negative_count / duration_sec if duration_sec > 0 else 0
+    
+    # 12. Positive Count: number of samples above zero per second
+    # Paper: "Mathematically calculated as the number of samples above zero per second in a signal"
+    positive_count = np.sum(x > 0)
+    features[f'{prefix}positive_count'] = positive_count / duration_sec if duration_sec > 0 else 0
+    
+    return features
+
+def extract_raw_signal_features(window_data, prefix=''):
+    """
+    Ekstraksi 4 raw signal features (sesuai paper):
+    1. mean, 2. RMS, 3. std, 4. median
+    """
     features = {}
     
     if window_data is None or len(window_data) == 0:
@@ -224,32 +536,89 @@ def extract_time_features(window_data, prefix=''):
     
     x = window_data.flatten()
     
-    # Basic statistics
+    # 1. Mean
     features[f'{prefix}mean'] = np.mean(x)
-    features[f'{prefix}median'] = np.median(x)
-    features[f'{prefix}std'] = np.std(x)
-    features[f'{prefix}var'] = np.var(x)
-    features[f'{prefix}min'] = np.min(x)
-    features[f'{prefix}max'] = np.max(x)
-    features[f'{prefix}range'] = np.ptp(x)
+    
+    # 2. RMS (Root Mean Square)
     features[f'{prefix}rms'] = np.sqrt(np.mean(x**2))
     
-    # Percentiles
-    features[f'{prefix}q25'] = np.percentile(x, 25)
-    features[f'{prefix}q75'] = np.percentile(x, 75)
-    features[f'{prefix}iqr'] = features[f'{prefix}q75'] - features[f'{prefix}q25']
+    # 3. Standard Deviation
+    features[f'{prefix}std'] = np.std(x)
     
-    # Higher order
-    features[f'{prefix}skewness'] = skew(x)
-    features[f'{prefix}kurtosis'] = kurtosis(x)
-    
-    # Energy
-    features[f'{prefix}energy'] = np.sum(x**2)
+    # 4. Median
+    features[f'{prefix}median'] = np.median(x)
     
     return features
 
-def extract_freq_features(window_data, fs, prefix=''):
-    """Ekstraksi frequency-domain features menggunakan Welch"""
+def extract_timeseries_features(window_data, prefix=''):
+    """
+    Ekstraksi 7 time series features (sesuai paper):
+    1. min, 2. median, 3. max, 4. Q1, 5. Q3, 6. ACF1, 7. PACF1
+    """
+    features = {}
+    
+    if window_data is None or len(window_data) == 0:
+        return features
+    
+    x = window_data.flatten()
+    
+    # 1. Minimum
+    features[f'{prefix}min'] = np.min(x)
+    
+    # 2. Median (already in raw features, but paper lists it here too)
+    features[f'{prefix}median_ts'] = np.median(x)
+    
+    # 3. Maximum
+    features[f'{prefix}max'] = np.max(x)
+    
+    # 4. First Quartile (Q1 - 25th percentile)
+    features[f'{prefix}q1'] = np.percentile(x, 25)
+    
+    # 5. Third Quartile (Q3 - 75th percentile)
+    features[f'{prefix}q3'] = np.percentile(x, 75)
+    
+    # 6. Autocorrelation Function with lag 1 (ACF1)
+    try:
+        if len(x) > 1:
+            # ACF at lag 1
+            x_shifted = x[1:]
+            x_original = x[:-1]
+            
+            # Pearson correlation
+            if np.std(x_shifted) > 0 and np.std(x_original) > 0:
+                acf1 = np.corrcoef(x_original, x_shifted)[0, 1]
+                features[f'{prefix}acf1'] = acf1
+            else:
+                features[f'{prefix}acf1'] = 0
+        else:
+            features[f'{prefix}acf1'] = 0
+    except:
+        features[f'{prefix}acf1'] = 0
+    
+    # 7. Partial Autocorrelation Function with lag 1 (PACF1)
+    try:
+        # Try using statsmodels for accurate PACF calculation
+        try:
+            from statsmodels.tsa.stattools import pacf
+            # Calculate PACF with lag 1 (returns array: [PACF(0)=1, PACF(1), ...])
+            pacf_values = pacf(x, nlags=1, method='ywunbiased')
+            features[f'{prefix}pacf1'] = pacf_values[1] if len(pacf_values) > 1 else 0
+        except ImportError:
+            # Fallback: PACF(1) = ACF(1) for lag 1 (true untuk AR(1) model)
+            features[f'{prefix}pacf1'] = features.get(f'{prefix}acf1', 0)
+    except:
+        features[f'{prefix}pacf1'] = 0
+    
+    return features
+
+def extract_spectral_features(window_data, fs, prefix=''):
+    """
+    Ekstraksi 20 spectral features (sesuai paper):
+    20 PSD amplitude features dari Welch method
+    Paper: "Twenty spectral features: obtained using the Welch power spectral 
+    density estimation method. Features were captured as the amplitude of PSD 
+    without its specific frequency."
+    """
     features = {}
     
     if window_data is None or len(window_data) < WELCH_NPERSEG:
@@ -261,36 +630,60 @@ def extract_freq_features(window_data, fs, prefix=''):
         # Welch periodogram
         f, Pxx = signal.welch(x, fs=fs, nperseg=min(WELCH_NPERSEG, len(x)))
         
-        # Total power
-        features[f'{prefix}total_power'] = np.trapz(Pxx, f)
+        # Extract N_SPECTRAL_FEATURES amplitude values evenly distributed
+        # Exclude DC component (f[0])
+        n_bins = len(Pxx)
         
-        # Dominant frequency
-        features[f'{prefix}dominant_freq'] = f[np.argmax(Pxx)]
-        features[f'{prefix}peak_power'] = np.max(Pxx)
-        
-        # Spectral centroid
-        features[f'{prefix}spectral_centroid'] = np.sum(f * Pxx) / np.sum(Pxx)
-        
-        # Band powers (physiological relevant bands)
-        # VLF: 0.003-0.04 Hz, LF: 0.04-0.15 Hz, HF: 0.15-0.4 Hz
-        vlf_mask = (f >= 0.003) & (f < 0.04)
-        lf_mask = (f >= 0.04) & (f < 0.15)
-        hf_mask = (f >= 0.15) & (f < 0.4)
-        
-        if np.any(vlf_mask):
-            features[f'{prefix}vlf_power'] = np.trapz(Pxx[vlf_mask], f[vlf_mask])
-        if np.any(lf_mask):
-            features[f'{prefix}lf_power'] = np.trapz(Pxx[lf_mask], f[lf_mask])
-        if np.any(hf_mask):
-            features[f'{prefix}hf_power'] = np.trapz(Pxx[hf_mask], f[hf_mask])
-        
-        # LF/HF ratio (cardiac autonomic balance indicator)
-        if f'{prefix}lf_power' in features and f'{prefix}hf_power' in features:
-            if features[f'{prefix}hf_power'] > 0:
-                features[f'{prefix}lf_hf_ratio'] = features[f'{prefix}lf_power'] / features[f'{prefix}hf_power']
-        
+        if n_bins > 1:
+            # Select N_SPECTRAL_FEATURES frequency bins evenly spaced
+            indices = np.linspace(1, n_bins-1, N_SPECTRAL_FEATURES, dtype=int)
+            
+            for i, idx in enumerate(indices):
+                # PSD amplitude only (sesuai paper: "without its specific frequency")
+                features[f'{prefix}psd_amp_{i+1}'] = Pxx[idx]
+    
     except Exception as e:
-        print(f"  Warning: Freq feature extraction failed: {e}")
+        # If extraction fails, return empty features
+        pass
+    
+    return features
+
+def extract_time_features(window_data, prefix=''):
+    """
+    Ekstraksi time-domain features sesuai paper.
+    Paper categories:
+    - 4 raw signal features: mean, RMS, std, median
+    - 12 statistical features: clearance_factor, crest_factor, impulse_factor, 
+      kurtosis, peak_value, SINAD, SNR, shape_factor, skewness, THD, 
+      negative_count, positive_count
+    - 7 time series features: min, median, max, Q1, Q3, ACF1, PACF1
+    Total: 23 time-domain features per signal
+    """
+    features = {}
+    
+    if window_data is None or len(window_data) == 0:
+        return features
+    
+    # Combine all time-domain features sesuai paper
+    features.update(extract_raw_signal_features(window_data, prefix))      # 4 features
+    features.update(extract_statistical_features(window_data, prefix))    # 12 features
+    features.update(extract_timeseries_features(window_data, prefix))     # 7 features
+    # Total: 23 time-domain features
+    
+    return features
+
+def extract_freq_features(window_data, fs, prefix=''):
+    """
+    Ekstraksi frequency-domain features sesuai paper.
+    Paper menggunakan 20 spectral features dari Welch PSD.
+    """
+    features = {}
+    
+    if window_data is None or len(window_data) < WELCH_NPERSEG:
+        return features
+    
+    # Spectral features (20 PSD amplitudes) - sesuai paper
+    features.update(extract_spectral_features(window_data, fs, prefix))
     
     return features
 
@@ -345,10 +738,10 @@ def extract_window_features(sensors_data, window, fs):
 # MAIN PROCESSING
 # =============================================================================
 
-def get_sensor_fs(session_path):
-    """Baca sampling frequency dari info.txt jika ada"""
-    info_path = os.path.join(session_path, 'info.txt')
-    fs_dict = {
+def get_sensor_fs(session_path, sensor_name):
+    """Baca sampling frequency dari baris ke-2 file CSV"""
+    # Default sampling frequencies
+    default_fs = {
         'ACC': 32,
         'BVP': 64,
         'EDA': 4,
@@ -357,29 +750,26 @@ def get_sensor_fs(session_path):
         'IBI': None  # Variable
     }
     
-    if os.path.exists(info_path):
+    # Try to read from actual file
+    sensor_file = os.path.join(session_path, f'{sensor_name}.csv')
+    if os.path.exists(sensor_file):
         try:
-            with open(info_path, 'r') as f:
-                for line in f:
-                    if 'Sample rate' in line or 'Hz' in line:
-                        # Parse sampling rate
-                        parts = line.strip().split()
-                        for p in parts:
-                            try:
-                                fs = float(p)
-                                if fs > 0:
-                                    return fs
-                            except:
-                                pass
-        except:
+            # Read second row (sample rate)
+            with open(sensor_file, 'r') as f:
+                next(f)  # Skip first line (timestamp)
+                fs_line = next(f).strip()
+                # Handle ACC format: "32.000000, 32.000000, 32.000000"
+                fs_value = float(fs_line.split(',')[0])
+                return fs_value
+        except Exception as e:
             pass
     
-    return fs_dict
+    # Fallback to default
+    return default_fs.get(sensor_name, 64)
 
-def load_session_sensors(session_path, target_fs=TARGET_FS):
-    """Load semua sensor dari satu session dan resample ke target_fs"""
+def load_session_sensors(session_path, exam_type, target_fs=TARGET_FS):
+    """Load semua sensor dari satu session, resample, dan apply preprocessing pipeline"""
     sensors = {}
-    fs_dict = get_sensor_fs(session_path)
     
     sensor_files = {
         'ACC': 'ACC.csv',
@@ -394,11 +784,8 @@ def load_session_sensors(session_path, target_fs=TARGET_FS):
         data = try_load_sensor(path)
         
         if data is not None:
-            # Get original fs
-            if isinstance(fs_dict, dict):
-                original_fs = fs_dict.get(sensor_name, target_fs)
-            else:
-                original_fs = fs_dict
+            # Get original fs from file
+            original_fs = get_sensor_fs(session_path, sensor_name)
             
             # Resample
             if data.ndim == 1:
@@ -415,7 +802,10 @@ def load_session_sensors(session_path, target_fs=TARGET_FS):
                 else:
                     resampled = None
             
-            sensors[sensor_name] = resampled
+            # Apply preprocessing pipeline (paper's method)
+            if resampled is not None:
+                preprocessed = preprocess_signal(resampled, target_fs, exam_type)
+                sensors[sensor_name] = preprocessed
     
     return sensors
 
@@ -428,8 +818,8 @@ def process_subject_session(subject, session, data_root=DATA_ROOT):
     
     print(f"\n  Processing: {subject}/{session}")
     
-    # Load sensors
-    sensors = load_session_sensors(session_path, TARGET_FS)
+    # Load sensors with preprocessing
+    sensors = load_session_sensors(session_path, session, TARGET_FS)
     
     if not sensors:
         print(f"    No sensors loaded, skipping...")
@@ -773,9 +1163,15 @@ def save_summary_report(all_sessions_data, window_sec, features_df, output_path)
         
         f.write(f"Standard Window Size: {window_sec} seconds\n")
         f.write(f"Target Sampling Rate: {TARGET_FS} Hz\n")
-        f.write(f"Rolling Window (Activity Detection): {ROLLING_SEC}s\n")
-        f.write(f"Threshold Percentile: {THRESHOLD_PERCENTILE}\n")
-        f.write(f"Min Segment Duration: {MIN_SEGMENT_SEC}s\n\n")
+        f.write(f"\nPreprocessing Steps (sesuai paper):\n")
+        f.write(f"  1. Truncate to exam duration (Midterm: 90min, Final: 180min)\n")
+        f.write(f"  2. Linear interpolation for missing data\n")
+        f.write(f"  3. Z-score normalization (mean=0, std=1)\n")
+        f.write(f"  4. Gaussian smoothing (window: {GAUSSIAN_WINDOW_SEC}s)\n")
+        f.write(f"\nWindowing Parameters:\n")
+        f.write(f"  Rolling Window (Activity Detection): {ROLLING_SEC}s\n")
+        f.write(f"  Threshold Percentile: {THRESHOLD_PERCENTILE}\n")
+        f.write(f"  Min Segment Duration: {MIN_SEGMENT_SEC}s\n\n")
         
         f.write("="*70 + "\n")
         f.write("PER-SESSION STATISTICS\n")

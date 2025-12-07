@@ -10,6 +10,16 @@ scipy==1.16.3
 scikit-learn==1.7.2
 skrebate==0.62
 
+# Time Series Analysis (for PACF)
+statsmodels>=0.14.0
+
+# GPU Acceleration (Optional - requires CUDA)
+# Install via conda: conda install -c rapidsai -c conda-forge -c nvidia cuml
+# cuml-cu12>=24.12  # For CUDA 12.x
+# cuml-cu11>=24.12  # For CUDA 11.x
+# cudf-cu12>=24.12  # cuDF (GPU DataFrame)
+# Note: cuML best installed via conda, not pip
+
 # Visualization
 matplotlib==3.10.7
 seaborn==0.13.2
