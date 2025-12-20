@@ -1,0 +1,36 @@
+================================================================================
+FINAL SUMMARY - CHI-SQUARE FEATURE SELECTION BENCHMARK
+================================================================================
+Generated: 2025-12-08 10:14:53
+Feature Selection Method: Chi-Square (chi2)
+Total Features: 137
+
+BEST MODEL PER TEST SIZE (by F1-Score)
+--------------------------------------------------------------------------------
+
+Test Size 20%:
+  Best Model: RandomForest
+  F1-Score:   0.9310
+  K-Features: 30
+  Parameters: {'clf__max_depth': None, 'clf__min_samples_leaf': 1, 'clf__min_samples_split': 2, 'clf__n_estimators': 200, 'selector__k': 30}
+
+Test Size 25%:
+  Best Model: RandomForest
+  F1-Score:   0.9676
+  K-Features: 30
+  Parameters: {'clf__max_depth': None, 'clf__min_samples_leaf': 1, 'clf__min_samples_split': 2, 'clf__n_estimators': 200, 'selector__k': 30}
+
+Test Size 30%:
+  Best Model: RandomForest
+  F1-Score:   0.9560
+  K-Features: 30
+  Parameters: {'clf__max_depth': None, 'clf__min_samples_leaf': 1, 'clf__min_samples_split': 2, 'clf__n_estimators': 200, 'selector__k': 30}
+
+================================================================================
+🏆 OVERALL BEST MODEL
+================================================================================
+Model:     RandomForest
+F1-Score:  0.9676
+Test Size: 25%
+K-Features: 30
+Parameters: {'clf__max_depth': None, 'clf__min_samples_leaf': 1, 'clf__min_samples_split': 2, 'clf__n_estimators': 200, 'selector__k': 30}

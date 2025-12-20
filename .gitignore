@@ -5,5 +5,16 @@ Data/
 preprocessed_data/
 results/
 results_anova/
+result_chi2/
+result_kruskal/
+result_relieff/
+__pycache__/
 results_feature_selection/
 a-wearable-exam-stress-dataset-for-predicting-cognitive-performance-in-real-world-settings-1.0.0.zip
+install_gpu.bat
+install_pytorch_cuda.bat
+GPU_IMPLEMENTATION_SUMMARY.md
+GPU_SETUP.md
+miniconda.sh
+PYTORCH_GPU_README.md
+requirements_pytorch.txt

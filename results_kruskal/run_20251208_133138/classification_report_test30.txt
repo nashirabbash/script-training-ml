@@ -1,0 +1,336 @@
+======================================================================
+CLASSIFICATION REPORT - KRUSKAL-WALLIS FEATURE SELECTION
+======================================================================
+Feature Selection Method: Kruskal-Wallis H-test
+Test Size: 30%
+Random State: 42
+CV Folds: 5
+Total Features: 137
+======================================================================
+
+SUMMARY TABLE
+──────────────────────────────────────────────────────────────────────
+Model                Accuracy     Precision    Recall       F1-Score    
+──────────────────────────────────────────────────────────────────────
+KNN                  0.8920       0.8914       0.8920       0.8914      
+SVM                  0.8483       0.8486       0.8483       0.8484      
+MLP                  0.8475       0.8464       0.8475       0.8467      
+RandomForest         0.9096       0.9095       0.9096       0.9088      
+NaiveBayes           0.5402       0.7269       0.5402       0.5122      
+DecisionTree         0.8483       0.8481       0.8483       0.8482      
+──────────────────────────────────────────────────────────────────────
+
+
+======================================================================
+MODEL: KNN
+======================================================================
+
+Best Parameters:
+  clf__metric: manhattan
+  clf__n_neighbors: 3
+  clf__weights: distance
+  selector__k: 25
+
+Test Set Performance:
+  Accuracy:  0.8920
+  Precision: 0.8914
+  Recall:    0.8920
+  F1-Score:  0.8914
+
+Feature Selection:
+  Total features selected: 25
+  Selected features (top 20):
+    - ACC_y_max
+    - ACC_y_q75
+    - ACC_z_mean
+    - ACC_z_q25
+    - BVP_median
+    - BVP_spectral_centroid
+    - EDA_std
+    - EDA_var
+    - EDA_max
+    - EDA_range
+    - EDA_rms
+    - EDA_q75
+    - EDA_iqr
+    - EDA_energy
+    - EDA_total_power
+    - EDA_peak_power
+    - EDA_spectral_centroid
+    - TEMP_mean
+    - TEMP_median
+    - TEMP_min
+    ... and 5 more
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.90      0.93      0.92       827
+           1       0.87      0.83      0.85       478
+
+    accuracy                           0.89      1305
+   macro avg       0.89      0.88      0.88      1305
+weighted avg       0.89      0.89      0.89      1305
+
+
+======================================================================
+MODEL: SVM
+======================================================================
+
+Best Parameters:
+  clf__C: 100
+  clf__gamma: scale
+  clf__kernel: rbf
+  selector__k: 30
+
+Test Set Performance:
+  Accuracy:  0.8483
+  Precision: 0.8486
+  Recall:    0.8483
+  F1-Score:  0.8484
+
+Feature Selection:
+  Total features selected: 30
+  Selected features (top 20):
+    - ACC_y_max
+    - ACC_y_q75
+    - ACC_z_mean
+    - ACC_z_median
+    - ACC_z_q25
+    - BVP_median
+    - BVP_q75
+    - BVP_spectral_centroid
+    - EDA_mean
+    - EDA_median
+    - EDA_std
+    - EDA_var
+    - EDA_max
+    - EDA_range
+    - EDA_rms
+    - EDA_q75
+    - EDA_iqr
+    - EDA_energy
+    - EDA_total_power
+    - EDA_peak_power
+    ... and 10 more
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.88      0.88      0.88       827
+           1       0.79      0.80      0.79       478
+
+    accuracy                           0.85      1305
+   macro avg       0.84      0.84      0.84      1305
+weighted avg       0.85      0.85      0.85      1305
+
+
+======================================================================
+MODEL: MLP
+======================================================================
+
+Best Parameters:
+  clf__activation: tanh
+  clf__alpha: 0.001
+  clf__batch_size: 64
+  clf__hidden_layer_sizes: (100, 50)
+  clf__learning_rate: constant
+  selector__k: 30
+
+Test Set Performance:
+  Accuracy:  0.8475
+  Precision: 0.8464
+  Recall:    0.8475
+  F1-Score:  0.8467
+
+Feature Selection:
+  Total features selected: 30
+  Selected features (top 20):
+    - ACC_y_max
+    - ACC_y_q75
+    - ACC_z_mean
+    - ACC_z_median
+    - ACC_z_q25
+    - BVP_median
+    - BVP_q75
+    - BVP_spectral_centroid
+    - EDA_mean
+    - EDA_median
+    - EDA_std
+    - EDA_var
+    - EDA_max
+    - EDA_range
+    - EDA_rms
+    - EDA_q75
+    - EDA_iqr
+    - EDA_energy
+    - EDA_total_power
+    - EDA_peak_power
+    ... and 10 more
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.87      0.89      0.88       827
+           1       0.81      0.77      0.79       478
+
+    accuracy                           0.85      1305
+   macro avg       0.84      0.83      0.83      1305
+weighted avg       0.85      0.85      0.85      1305
+
+
+======================================================================
+MODEL: RandomForest
+======================================================================
+
+Best Parameters:
+  clf__max_depth: None
+  clf__min_samples_leaf: 1
+  clf__min_samples_split: 2
+  clf__n_estimators: 200
+  selector__k: 30
+
+Test Set Performance:
+  Accuracy:  0.9096
+  Precision: 0.9095
+  Recall:    0.9096
+  F1-Score:  0.9088
+
+Feature Selection:
+  Total features selected: 30
+  Selected features (top 20):
+    - ACC_y_max
+    - ACC_y_q75
+    - ACC_z_mean
+    - ACC_z_median
+    - ACC_z_q25
+    - BVP_median
+    - BVP_q75
+    - BVP_spectral_centroid
+    - EDA_mean
+    - EDA_median
+    - EDA_std
+    - EDA_var
+    - EDA_max
+    - EDA_range
+    - EDA_rms
+    - EDA_q75
+    - EDA_iqr
+    - EDA_energy
+    - EDA_total_power
+    - EDA_peak_power
+    ... and 10 more
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.91      0.95      0.93       827
+           1       0.91      0.84      0.87       478
+
+    accuracy                           0.91      1305
+   macro avg       0.91      0.89      0.90      1305
+weighted avg       0.91      0.91      0.91      1305
+
+
+======================================================================
+MODEL: NaiveBayes
+======================================================================
+
+Best Parameters:
+  clf__var_smoothing: 1e-12
+  selector__k: 30
+
+Test Set Performance:
+  Accuracy:  0.5402
+  Precision: 0.7269
+  Recall:    0.5402
+  F1-Score:  0.5122
+
+Feature Selection:
+  Total features selected: 30
+  Selected features (top 20):
+    - ACC_y_max
+    - ACC_y_q75
+    - ACC_z_mean
+    - ACC_z_median
+    - ACC_z_q25
+    - BVP_median
+    - BVP_q75
+    - BVP_spectral_centroid
+    - EDA_mean
+    - EDA_median
+    - EDA_std
+    - EDA_var
+    - EDA_max
+    - EDA_range
+    - EDA_rms
+    - EDA_q75
+    - EDA_iqr
+    - EDA_energy
+    - EDA_total_power
+    - EDA_peak_power
+    ... and 10 more
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.89      0.31      0.46       827
+           1       0.44      0.94      0.60       478
+
+    accuracy                           0.54      1305
+   macro avg       0.67      0.62      0.53      1305
+weighted avg       0.73      0.54      0.51      1305
+
+
+======================================================================
+MODEL: DecisionTree
+======================================================================
+
+Best Parameters:
+  clf__criterion: entropy
+  clf__max_depth: None
+  clf__min_samples_leaf: 1
+  clf__min_samples_split: 2
+  selector__k: 25
+
+Test Set Performance:
+  Accuracy:  0.8483
+  Precision: 0.8481
+  Recall:    0.8483
+  F1-Score:  0.8482
+
+Feature Selection:
+  Total features selected: 25
+  Selected features (top 20):
+    - ACC_y_max
+    - ACC_y_q75
+    - ACC_z_mean
+    - ACC_z_q25
+    - BVP_median
+    - BVP_spectral_centroid
+    - EDA_std
+    - EDA_var
+    - EDA_max
+    - EDA_range
+    - EDA_rms
+    - EDA_q75
+    - EDA_iqr
+    - EDA_energy
+    - EDA_total_power
+    - EDA_peak_power
+    - EDA_spectral_centroid
+    - TEMP_mean
+    - TEMP_median
+    - TEMP_min
+    ... and 5 more
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.88      0.88      0.88       827
+           1       0.79      0.79      0.79       478
+
+    accuracy                           0.85      1305
+   macro avg       0.84      0.84      0.84      1305
+weighted avg       0.85      0.85      0.85      1305
+

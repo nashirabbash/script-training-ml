@@ -1,0 +1,348 @@
+================================================================================
+HYPERPARAMETER TUNING WITH CHI-SQUARE FEATURE SELECTION
+================================================================================
+Generated: 2025-12-08 10:14:53
+Feature Selection Method: Chi-Square (chi2)
+Scaler: MinMaxScaler (to ensure non-negative values)
+Test Size: 30%
+Cross-Validation Folds: 5
+Total Features Available: 137
+================================================================================
+
+SUMMARY TABLE
+--------------------------------------------------------------------------------
+Model           K-Features   Accuracy     Precision    Recall       F1-Score    
+--------------------------------------------------------------------------------
+KNN             25           0.8628       0.8619       0.8628       0.8621      
+SVM             25           0.8286       0.8290       0.8286       0.8239      
+MLP             30           0.7932       0.7968       0.7932       0.7826      
+RandomForest    30           0.9565       0.9578       0.9565       0.9560      
+NaiveBayes      15           0.6888       0.7044       0.6888       0.6932      
+DecisionTree    30           0.9270       0.9268       0.9270       0.9267      
+--------------------------------------------------------------------------------
+
+
+================================================================================
+MODEL: KNN
+================================================================================
+
+Best Parameters:
+  - clf__metric: manhattan
+  - clf__n_neighbors: 3
+  - clf__weights: distance
+  - selector__k: 25
+
+Best CV Score (F1): 0.8044
+
+Selected Features (25):
+  - ACC_mag_min
+  - ACC_mag_q25
+  - ACC_mag_skewness
+  - ACC_x_q25
+  - ACC_y_median
+  - ACC_y_q25
+  - ACC_z_median
+  - ACC_z_q25
+  - BVP_median
+  - BVP_min
+  - BVP_q25
+  - BVP_q75
+  - BVP_iqr
+  - BVP_kurtosis
+  - BVP_spectral_centroid
+  - EDA_median
+  - HR_mean
+  - HR_median
+  - HR_var
+  - HR_max
+  - HR_range
+  - HR_kurtosis
+  - HR_energy
+  - HR_total_power
+  - TEMP_median
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.88      0.90      0.89       946
+           1       0.83      0.79      0.81       548
+
+    accuracy                           0.86      1494
+   macro avg       0.85      0.85      0.85      1494
+weighted avg       0.86      0.86      0.86      1494
+
+Confusion Matrix:
+[[856  90]
+ [115 433]]
+
+================================================================================
+MODEL: SVM
+================================================================================
+
+Best Parameters:
+  - clf__C: 100
+  - clf__gamma: scale
+  - clf__kernel: rbf
+  - selector__k: 25
+
+Best CV Score (F1): 0.7125
+
+Selected Features (25):
+  - ACC_mag_min
+  - ACC_mag_q25
+  - ACC_mag_skewness
+  - ACC_x_q25
+  - ACC_y_median
+  - ACC_y_q25
+  - ACC_z_median
+  - ACC_z_q25
+  - BVP_median
+  - BVP_min
+  - BVP_q25
+  - BVP_q75
+  - BVP_iqr
+  - BVP_kurtosis
+  - BVP_spectral_centroid
+  - EDA_median
+  - HR_mean
+  - HR_median
+  - HR_var
+  - HR_max
+  - HR_range
+  - HR_kurtosis
+  - HR_energy
+  - HR_total_power
+  - TEMP_median
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.83      0.92      0.87       946
+           1       0.83      0.67      0.74       548
+
+    accuracy                           0.83      1494
+   macro avg       0.83      0.79      0.81      1494
+weighted avg       0.83      0.83      0.82      1494
+
+Confusion Matrix:
+[[872  74]
+ [182 366]]
+
+================================================================================
+MODEL: MLP
+================================================================================
+
+Best Parameters:
+  - clf__activation: relu
+  - clf__alpha: 0.001
+  - clf__batch_size: 64
+  - clf__hidden_layer_sizes: (100,)
+  - clf__learning_rate: adaptive
+  - selector__k: 30
+
+Best CV Score (F1): 0.6621
+
+Selected Features (30):
+  - ACC_mag_min
+  - ACC_mag_q25
+  - ACC_mag_skewness
+  - ACC_x_q25
+  - ACC_y_median
+  - ACC_y_q25
+  - ACC_z_median
+  - ACC_z_q25
+  - BVP_median
+  - BVP_min
+  - BVP_q25
+  - BVP_q75
+  - BVP_iqr
+  - BVP_kurtosis
+  - BVP_spectral_centroid
+  - EDA_median
+  - HR_mean
+  - HR_median
+  - HR_std
+  - HR_var
+  - HR_max
+  - HR_range
+  - HR_rms
+  - HR_skewness
+  - HR_kurtosis
+  - HR_energy
+  - HR_total_power
+  - HR_peak_power
+  - TEMP_median
+  - TEMP_peak_power
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.79      0.93      0.85       946
+           1       0.82      0.56      0.67       548
+
+    accuracy                           0.79      1494
+   macro avg       0.80      0.74      0.76      1494
+weighted avg       0.80      0.79      0.78      1494
+
+Confusion Matrix:
+[[877  69]
+ [240 308]]
+
+================================================================================
+MODEL: RandomForest
+================================================================================
+
+Best Parameters:
+  - clf__max_depth: None
+  - clf__min_samples_leaf: 1
+  - clf__min_samples_split: 2
+  - clf__n_estimators: 200
+  - selector__k: 30
+
+Best CV Score (F1): 0.9256
+
+Selected Features (30):
+  - ACC_mag_min
+  - ACC_mag_q25
+  - ACC_mag_skewness
+  - ACC_x_q25
+  - ACC_y_median
+  - ACC_y_q25
+  - ACC_z_median
+  - ACC_z_q25
+  - BVP_median
+  - BVP_min
+  - BVP_q25
+  - BVP_q75
+  - BVP_iqr
+  - BVP_kurtosis
+  - BVP_spectral_centroid
+  - EDA_median
+  - HR_mean
+  - HR_median
+  - HR_std
+  - HR_var
+  - HR_max
+  - HR_range
+  - HR_rms
+  - HR_skewness
+  - HR_kurtosis
+  - HR_energy
+  - HR_total_power
+  - HR_peak_power
+  - TEMP_median
+  - TEMP_peak_power
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.94      0.99      0.97       946
+           1       0.98      0.90      0.94       548
+
+    accuracy                           0.96      1494
+   macro avg       0.96      0.94      0.95      1494
+weighted avg       0.96      0.96      0.96      1494
+
+Confusion Matrix:
+[[938   8]
+ [ 57 491]]
+
+================================================================================
+MODEL: NaiveBayes
+================================================================================
+
+Best Parameters:
+  - clf__var_smoothing: 1e-12
+  - selector__k: 15
+
+Best CV Score (F1): 0.5970
+
+Selected Features (15):
+  - ACC_mag_min
+  - ACC_x_q25
+  - ACC_y_median
+  - ACC_y_q25
+  - ACC_z_median
+  - ACC_z_q25
+  - BVP_median
+  - BVP_q25
+  - BVP_q75
+  - BVP_iqr
+  - BVP_kurtosis
+  - BVP_spectral_centroid
+  - EDA_median
+  - HR_median
+  - TEMP_median
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.79      0.70      0.74       946
+           1       0.56      0.67      0.61       548
+
+    accuracy                           0.69      1494
+   macro avg       0.67      0.69      0.68      1494
+weighted avg       0.70      0.69      0.69      1494
+
+Confusion Matrix:
+[[661 285]
+ [180 368]]
+
+================================================================================
+MODEL: DecisionTree
+================================================================================
+
+Best Parameters:
+  - clf__criterion: entropy
+  - clf__max_depth: 20
+  - clf__min_samples_leaf: 4
+  - clf__min_samples_split: 2
+  - selector__k: 30
+
+Best CV Score (F1): 0.8684
+
+Selected Features (30):
+  - ACC_mag_min
+  - ACC_mag_q25
+  - ACC_mag_skewness
+  - ACC_x_q25
+  - ACC_y_median
+  - ACC_y_q25
+  - ACC_z_median
+  - ACC_z_q25
+  - BVP_median
+  - BVP_min
+  - BVP_q25
+  - BVP_q75
+  - BVP_iqr
+  - BVP_kurtosis
+  - BVP_spectral_centroid
+  - EDA_median
+  - HR_mean
+  - HR_median
+  - HR_std
+  - HR_var
+  - HR_max
+  - HR_range
+  - HR_rms
+  - HR_skewness
+  - HR_kurtosis
+  - HR_energy
+  - HR_total_power
+  - HR_peak_power
+  - TEMP_median
+  - TEMP_peak_power
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.93      0.95      0.94       946
+           1       0.92      0.88      0.90       548
+
+    accuracy                           0.93      1494
+   macro avg       0.92      0.92      0.92      1494
+weighted avg       0.93      0.93      0.93      1494
+
+Confusion Matrix:
+[[902  44]
+ [ 65 483]]

@@ -1,0 +1,363 @@
+================================================================================
+HYPERPARAMETER TUNING WITH CHI-SQUARE FEATURE SELECTION
+================================================================================
+Generated: 2025-12-08 12:14:13
+Feature Selection Method: Chi-Square (chi2)
+Scaler: MinMaxScaler (to ensure non-negative values)
+Test Size: 25%
+Cross-Validation Folds: 5
+Total Features Available: 137
+================================================================================
+
+SUMMARY TABLE
+--------------------------------------------------------------------------------
+Model           K-Features   Accuracy     Precision    Recall       F1-Score    
+--------------------------------------------------------------------------------
+KNN             30           0.8768       0.8761       0.8768       0.8762      
+SVM             30           0.7904       0.7930       0.7904       0.7915      
+MLP             30           0.7491       0.7437       0.7491       0.7425      
+RandomForest    30           0.9090       0.9086       0.9090       0.9086      
+NaiveBayes      25           0.5358       0.7352       0.5358       0.5036      
+DecisionTree    25           0.8511       0.8522       0.8511       0.8516      
+--------------------------------------------------------------------------------
+
+
+================================================================================
+MODEL: KNN
+================================================================================
+
+Best Parameters:
+  - clf__metric: manhattan
+  - clf__n_neighbors: 3
+  - clf__weights: distance
+  - selector__k: 30
+
+Best CV Score (F1): 0.8243
+
+Selected Features (30):
+  - ACC_y_std
+  - ACC_y_max
+  - ACC_y_q75
+  - ACC_y_iqr
+  - ACC_y_energy
+  - ACC_z_mean
+  - ACC_z_q25
+  - ACC_z_energy
+  - EDA_mean
+  - EDA_median
+  - EDA_std
+  - EDA_var
+  - EDA_min
+  - EDA_max
+  - EDA_range
+  - EDA_rms
+  - EDA_q25
+  - EDA_q75
+  - EDA_iqr
+  - EDA_energy
+  - EDA_total_power
+  - EDA_peak_power
+  - TEMP_mean
+  - TEMP_median
+  - TEMP_min
+  - TEMP_max
+  - TEMP_rms
+  - TEMP_q25
+  - TEMP_q75
+  - TEMP_energy
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.89      0.92      0.90       689
+           1       0.85      0.81      0.83       399
+
+    accuracy                           0.88      1088
+   macro avg       0.87      0.86      0.87      1088
+weighted avg       0.88      0.88      0.88      1088
+
+Confusion Matrix:
+[[631  58]
+ [ 76 323]]
+
+================================================================================
+MODEL: SVM
+================================================================================
+
+Best Parameters:
+  - clf__C: 100
+  - clf__gamma: scale
+  - clf__kernel: rbf
+  - selector__k: 30
+
+Best CV Score (F1): 0.6877
+
+Selected Features (30):
+  - ACC_y_std
+  - ACC_y_max
+  - ACC_y_q75
+  - ACC_y_iqr
+  - ACC_y_energy
+  - ACC_z_mean
+  - ACC_z_q25
+  - ACC_z_energy
+  - EDA_mean
+  - EDA_median
+  - EDA_std
+  - EDA_var
+  - EDA_min
+  - EDA_max
+  - EDA_range
+  - EDA_rms
+  - EDA_q25
+  - EDA_q75
+  - EDA_iqr
+  - EDA_energy
+  - EDA_total_power
+  - EDA_peak_power
+  - TEMP_mean
+  - TEMP_median
+  - TEMP_min
+  - TEMP_max
+  - TEMP_rms
+  - TEMP_q25
+  - TEMP_q75
+  - TEMP_energy
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.84      0.82      0.83       689
+           1       0.70      0.74      0.72       399
+
+    accuracy                           0.79      1088
+   macro avg       0.77      0.78      0.78      1088
+weighted avg       0.79      0.79      0.79      1088
+
+Confusion Matrix:
+[[565 124]
+ [104 295]]
+
+================================================================================
+MODEL: MLP
+================================================================================
+
+Best Parameters:
+  - clf__activation: tanh
+  - clf__alpha: 0.001
+  - clf__batch_size: 64
+  - clf__hidden_layer_sizes: (100, 50)
+  - clf__learning_rate: constant
+  - selector__k: 30
+
+Best CV Score (F1): 0.5958
+
+Selected Features (30):
+  - ACC_y_std
+  - ACC_y_max
+  - ACC_y_q75
+  - ACC_y_iqr
+  - ACC_y_energy
+  - ACC_z_mean
+  - ACC_z_q25
+  - ACC_z_energy
+  - EDA_mean
+  - EDA_median
+  - EDA_std
+  - EDA_var
+  - EDA_min
+  - EDA_max
+  - EDA_range
+  - EDA_rms
+  - EDA_q25
+  - EDA_q75
+  - EDA_iqr
+  - EDA_energy
+  - EDA_total_power
+  - EDA_peak_power
+  - TEMP_mean
+  - TEMP_median
+  - TEMP_min
+  - TEMP_max
+  - TEMP_rms
+  - TEMP_q25
+  - TEMP_q75
+  - TEMP_energy
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.77      0.86      0.81       689
+           1       0.69      0.56      0.62       399
+
+    accuracy                           0.75      1088
+   macro avg       0.73      0.71      0.72      1088
+weighted avg       0.74      0.75      0.74      1088
+
+Confusion Matrix:
+[[590  99]
+ [174 225]]
+
+================================================================================
+MODEL: RandomForest
+================================================================================
+
+Best Parameters:
+  - clf__max_depth: None
+  - clf__min_samples_leaf: 1
+  - clf__min_samples_split: 2
+  - clf__n_estimators: 200
+  - selector__k: 30
+
+Best CV Score (F1): 0.8566
+
+Selected Features (30):
+  - ACC_y_std
+  - ACC_y_max
+  - ACC_y_q75
+  - ACC_y_iqr
+  - ACC_y_energy
+  - ACC_z_mean
+  - ACC_z_q25
+  - ACC_z_energy
+  - EDA_mean
+  - EDA_median
+  - EDA_std
+  - EDA_var
+  - EDA_min
+  - EDA_max
+  - EDA_range
+  - EDA_rms
+  - EDA_q25
+  - EDA_q75
+  - EDA_iqr
+  - EDA_energy
+  - EDA_total_power
+  - EDA_peak_power
+  - TEMP_mean
+  - TEMP_median
+  - TEMP_min
+  - TEMP_max
+  - TEMP_rms
+  - TEMP_q25
+  - TEMP_q75
+  - TEMP_energy
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.92      0.94      0.93       689
+           1       0.89      0.85      0.87       399
+
+    accuracy                           0.91      1088
+   macro avg       0.91      0.90      0.90      1088
+weighted avg       0.91      0.91      0.91      1088
+
+Confusion Matrix:
+[[648  41]
+ [ 58 341]]
+
+================================================================================
+MODEL: NaiveBayes
+================================================================================
+
+Best Parameters:
+  - clf__var_smoothing: 1e-12
+  - selector__k: 25
+
+Best CV Score (F1): 0.5914
+
+Selected Features (25):
+  - ACC_y_max
+  - ACC_y_q75
+  - ACC_y_energy
+  - ACC_z_q25
+  - ACC_z_energy
+  - EDA_mean
+  - EDA_median
+  - EDA_std
+  - EDA_min
+  - EDA_max
+  - EDA_range
+  - EDA_rms
+  - EDA_q25
+  - EDA_q75
+  - EDA_iqr
+  - EDA_energy
+  - EDA_total_power
+  - TEMP_mean
+  - TEMP_median
+  - TEMP_min
+  - TEMP_max
+  - TEMP_rms
+  - TEMP_q25
+  - TEMP_q75
+  - TEMP_energy
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.91      0.30      0.45       689
+           1       0.44      0.95      0.60       399
+
+    accuracy                           0.54      1088
+   macro avg       0.67      0.62      0.52      1088
+weighted avg       0.74      0.54      0.50      1088
+
+Confusion Matrix:
+[[205 484]
+ [ 21 378]]
+
+================================================================================
+MODEL: DecisionTree
+================================================================================
+
+Best Parameters:
+  - clf__criterion: entropy
+  - clf__max_depth: 20
+  - clf__min_samples_leaf: 1
+  - clf__min_samples_split: 2
+  - selector__k: 25
+
+Best CV Score (F1): 0.7983
+
+Selected Features (25):
+  - ACC_y_max
+  - ACC_y_q75
+  - ACC_y_energy
+  - ACC_z_q25
+  - ACC_z_energy
+  - EDA_mean
+  - EDA_median
+  - EDA_std
+  - EDA_min
+  - EDA_max
+  - EDA_range
+  - EDA_rms
+  - EDA_q25
+  - EDA_q75
+  - EDA_iqr
+  - EDA_energy
+  - EDA_total_power
+  - TEMP_mean
+  - TEMP_median
+  - TEMP_min
+  - TEMP_max
+  - TEMP_rms
+  - TEMP_q25
+  - TEMP_q75
+  - TEMP_energy
+
+Classification Report:
+              precision    recall  f1-score   support
+
+           0       0.89      0.87      0.88       689
+           1       0.79      0.81      0.80       399
+
+    accuracy                           0.85      1088
+   macro avg       0.84      0.84      0.84      1088
+weighted avg       0.85      0.85      0.85      1088
+
+Confusion Matrix:
+[[602  87]
+ [ 75 324]]

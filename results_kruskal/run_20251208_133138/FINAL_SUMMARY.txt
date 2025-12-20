@@ -1,0 +1,57 @@
+======================================================================
+FINAL SUMMARY - KRUSKAL-WALLIS FEATURE SELECTION
+======================================================================
+Generated: 2025-12-08 14:21:06
+
+Feature Selection Method: Kruskal-Wallis H-test
+Total Features: 137
+Test Sizes: [0.2, 0.25, 0.3]
+CV Folds: 5
+Random State: 42
+
+======================================================================
+BEST MODEL PER TEST SIZE
+======================================================================
+
+Test Size: 20%
+  Best Model: RandomForest
+  Accuracy:  0.9138
+  Precision: 0.9135
+  Recall:    0.9138
+  F1-Score:  0.9133
+  Features Selected: 30
+
+Test Size: 25%
+  Best Model: RandomForest
+  Accuracy:  0.9081
+  Precision: 0.9078
+  Recall:    0.9081
+  F1-Score:  0.9074
+  Features Selected: 30
+
+Test Size: 30%
+  Best Model: RandomForest
+  Accuracy:  0.9096
+  Precision: 0.9095
+  Recall:    0.9096
+  F1-Score:  0.9088
+  Features Selected: 30
+
+======================================================================
+OVERALL BEST MODEL (by F1-Score)
+======================================================================
+
+Model: RandomForest
+Test Size: 20%
+Accuracy:  0.9138
+Precision: 0.9135
+Recall:    0.9138
+F1-Score:  0.9133
+Features Selected: 30
+
+Best Parameters:
+  clf__max_depth: None
+  clf__min_samples_leaf: 1
+  clf__min_samples_split: 2
+  clf__n_estimators: 200
+  selector__k: 30

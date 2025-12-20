@@ -18,6 +18,12 @@ Date: 2025
 =============================================================================
 """
 
+import sys
+import io
+# Fix Windows encoding untuk Unicode characters
+sys.stdout = io.TextIOWrapper(sys.stdout.buffer, encoding='utf-8', errors='replace')
+sys.stderr = io.TextIOWrapper(sys.stderr.buffer, encoding='utf-8', errors='replace')
+
 import numpy as np
 import pandas as pd
 
@@ -46,10 +52,12 @@ from sklearn.metrics import (
 # Models
 from sklearn.neighbors import KNeighborsClassifier
 from sklearn.svm import SVC
-from sklearn.neural_network import MLPClassifier
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.naive_bayes import GaussianNB
 from sklearn.tree import DecisionTreeClassifier
+
+# PyTorch MLP (GPU-accelerated)
+from pytorch_mlp_wrapper import PyTorchMLPClassifier, check_gpu_availability
 
 # ReliefF - coba import dari skrebate
 try:
@@ -195,9 +203,11 @@ def get_models_and_params(n_features):
             'model': KNeighborsClassifier(),
             'params': {
                 'selector__n_features_to_select': k_values,
-                'clf__n_neighbors': [3, 5, 7, 9, 11],
+                # Reduced dari 5 → 3 neighbors (skip 5 & 9, keep odd numbers)
+                'clf__n_neighbors': [3, 7, 11],
                 'clf__weights': ['uniform', 'distance'],
-                'clf__metric': ['euclidean', 'manhattan', 'minkowski']
+                # Reduced dari 3 → 2 metrics (euclidean & manhattan cukup)
+                'clf__metric': ['euclidean', 'manhattan']
             }
         },
         
@@ -205,31 +215,47 @@ def get_models_and_params(n_features):
             'model': SVC(random_state=RANDOM_STATE),
             'params': {
                 'selector__n_features_to_select': k_values,
-                'clf__C': [0.1, 1, 10, 100],
-                'clf__kernel': ['linear', 'rbf', 'poly', 'sigmoid'],
+                # Reduced dari 4 → 3 C values (hapus 0.1 yang terlalu kecil)
+                'clf__C': [1, 10, 100],
+                # Reduced dari 4 → 2 kernels (linear & rbf paling efektif)
+                # poly & sigmoid: lambat + jarang optimal untuk tabular data
+                'clf__kernel': ['linear', 'rbf'],
                 'clf__gamma': ['scale', 'auto']
             }
         },
         
         'MLP': {
-            'model': MLPClassifier(random_state=RANDOM_STATE, max_iter=1000),
+            # OPTIMISASI MAKSIMAL: minimal grid, max_iter rendah, fokus speed
+            # Early stopping akan handle convergence
+            'model': PyTorchMLPClassifier(random_state=RANDOM_STATE, max_iter=200, verbose=0),
             'params': {
-                'selector__n_features_to_select': k_values,
-                'clf__hidden_layer_sizes': [(50,), (100,), (50, 50), (100, 50)],
-                'clf__activation': ['relu', 'tanh'],
-                'clf__alpha': [0.0001, 0.001, 0.01],
-                'clf__learning_rate': ['constant', 'adaptive']
+                # HANYA test k=[10,20,30] untuk MLP (skip 5,15,25)
+                'selector__n_features_to_select': [k for k in [10, 20, 30] if k <= n_features],
+                # 1 arsitektur saja (proven best for tabular)
+                'clf__hidden_layer_sizes': [(100,50)],
+                # 1 activation (ReLU industry standard)
+                'clf__activation': ['tanh'],
+                # 1 alpha (middle ground)
+                'clf__alpha': [0.001],
+                # 1 learning rate (adaptive paling robust)
+                'clf__learning_rate': ['constant'],
+                # Batch besar untuk GPU efficiency (skip 32)
+                'clf__batch_size': [64]
             }
         },
         
         'RandomForest': {
-            'model': RandomForestClassifier(random_state=RANDOM_STATE),
+            'model': RandomForestClassifier(random_state=RANDOM_STATE, n_jobs=-1),
             'params': {
                 'selector__n_features_to_select': k_values,
-                'clf__n_estimators': [50, 100, 200],
-                'clf__max_depth': [None, 10, 20, 30],
-                'clf__min_samples_split': [2, 5, 10],
-                'clf__min_samples_leaf': [1, 2, 4]
+                # Reduced dari 3 → 2 (skip 100, extreme values cukup)
+                'clf__n_estimators': [50, 200],
+                # Reduced dari 4 → 3 (hapus 20, fokus None/10/30)
+                'clf__max_depth': [None, 10, 30],
+                # Reduced dari 3 → 2 (skip 5, keep extremes)
+                'clf__min_samples_split': [2, 10],
+                # Reduced dari 3 → 2 (skip middle value)
+                'clf__min_samples_leaf': [1, 4]
             }
         },
         
@@ -245,9 +271,12 @@ def get_models_and_params(n_features):
             'model': DecisionTreeClassifier(random_state=RANDOM_STATE),
             'params': {
                 'selector__n_features_to_select': k_values,
-                'clf__max_depth': [None, 5, 10, 15, 20],
-                'clf__min_samples_split': [2, 5, 10],
-                'clf__min_samples_leaf': [1, 2, 4],
+                # Reduced dari 5 → 3 (hapus 5 & 15, keep spread values)
+                'clf__max_depth': [None, 10, 20],
+                # Reduced dari 3 → 2 (skip 5, keep extremes)
+                'clf__min_samples_split': [2, 10],
+                # Reduced dari 3 → 2 (skip middle value)
+                'clf__min_samples_leaf': [1, 4],
                 'clf__criterion': ['gini', 'entropy']
             }
         }
@@ -265,6 +294,77 @@ def create_output_directory(base_dir=OUTPUT_DIR):
     output_path = os.path.join(base_dir, f"run_{timestamp}")
     os.makedirs(output_path, exist_ok=True)
     return output_path
+
+
+def save_feature_selection_scores(X, y, feature_names, output_path):
+    """
+    Menghitung dan menyimpan skor feature selection ke CSV.
+    Dipanggil di awal flow sebelum benchmark dimulai.
+    
+    Args:
+        X: Feature matrix
+        y: Target vector
+        feature_names: List nama fitur
+        output_path: Path direktori output
+    
+    Returns:
+        df_scores: DataFrame berisi skor fitur
+    """
+    print("\n" + "=" * 70)
+    print("COMPUTING FEATURE SELECTION SCORES")
+    print(f"Method: {FEATURE_SELECTION_METHOD}")
+    print("=" * 70)
+    
+    # Handle missing values dengan median
+    from sklearn.impute import SimpleImputer
+    imputer = SimpleImputer(strategy='median')
+    X_arr = X.values if hasattr(X, 'values') else X
+    y_arr = y.values if hasattr(y, 'values') else y
+    X_imputed = imputer.fit_transform(X_arr)
+    
+    # Standardize features
+    from sklearn.preprocessing import StandardScaler
+    scaler = StandardScaler()
+    X_scaled = scaler.fit_transform(X_imputed)
+    
+    # Hitung ReliefF scores
+    if RELIEFF_AVAILABLE:
+        actual_neighbors = min(RELIEFF_N_NEIGHBORS, len(X_scaled) - 1)
+        relieff = ReliefF(
+            n_features_to_select=len(feature_names),  # All features untuk scoring
+            n_neighbors=actual_neighbors,
+            discrete_threshold=10,
+            n_jobs=-1
+        )
+        relieff.fit(X_scaled, y_arr)
+        scores = relieff.feature_importances_
+    else:
+        # Fallback ke f_classif
+        from sklearn.feature_selection import f_classif
+        scores, _ = f_classif(X_scaled, y_arr)
+    
+    # Buat DataFrame hasil
+    df_scores = pd.DataFrame({
+        'feature': feature_names,
+        'relieff_score': scores
+    })
+    
+    # Sort by score (descending)
+    df_scores = df_scores.sort_values('relieff_score', ascending=False).reset_index(drop=True)
+    df_scores['rank'] = range(1, len(df_scores) + 1)
+    
+    # Reorder columns
+    df_scores = df_scores[['rank', 'feature', 'relieff_score']]
+    
+    # Save to CSV
+    csv_path = os.path.join(output_path, 'feature_selection_scores.csv')
+    df_scores.to_csv(csv_path, index=False)
+    
+    print(f"\nTop 10 Features by ReliefF Score:")
+    print(df_scores.head(10).to_string(index=False))
+    print(f"\n>>> Feature scores saved to: {csv_path}")
+    
+    return df_scores
 
 
 def load_and_prepare_data(filepath, target_col=TARGET_COLUMN):
@@ -369,14 +469,25 @@ def train_with_gridsearch(pipeline, params, X_train, y_train, model_name):
     print(f"Feature Selection: ReliefF")
     print(f"{'─' * 50}")
     
+    # Convert to NumPy arrays to avoid Pandas serialization issues in parallel processing
+    if hasattr(X_train, 'values'):
+        X_train = X_train.values
+    if hasattr(y_train, 'values'):
+        y_train = y_train.values
+    
     cv = StratifiedKFold(n_splits=CV_FOLDS, shuffle=True, random_state=RANDOM_STATE)
+    
+    # PENTING: Gunakan n_jobs=2 untuk menghindari memory fragmentation
+    # n_jobs=-1 menyebabkan terlalu banyak worker process yang kompetisi memory
+    # Untuk MLP: n_jobs=1 lebih baik karena PyTorch sudah parallel di GPU
+    n_jobs = 1 if 'MLP' in model_name else 2
     
     grid_search = GridSearchCV(
         estimator=pipeline,
         param_grid=params,
         cv=cv,
         scoring='f1',
-        n_jobs=-1,
+        n_jobs=n_jobs,  # MLP: sequential (GPU parallelism), Others: 2 workers
         verbose=1,
         return_train_score=True
     )
@@ -732,6 +843,12 @@ def main():
     print("  HYPERPARAMETER TUNING WITH ReliefF FEATURE SELECTION")
     print("█" * 70)
     
+    # Check GPU availability for PyTorch MLP
+    print("\n" + "=" * 70)
+    print("GPU STATUS")
+    print("=" * 70)
+    check_gpu_availability()
+    
     if not RELIEFF_AVAILABLE:
         print("\n⚠️  WARNING: skrebate package not found!")
         print("   To use actual ReliefF, install it with:")
@@ -743,6 +860,9 @@ def main():
     
     data_path = "preprocessed_data/features_all.csv"
     X, y, feature_names = load_and_prepare_data(data_path, TARGET_COLUMN)
+    
+    # Save feature selection scores ke CSV (di awal flow)
+    save_feature_selection_scores(X, y, feature_names, output_path)
     
     all_benchmarks = {}
     
